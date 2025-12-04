@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart';
 import '../styles/style.dart';
 import '../utils/utility.dart';
 
@@ -15,34 +17,71 @@ var requestHeader2 = {
 
 
 
-Future<bool>registrationRequest(formValues) async {
+// Future<bool>registrationRequest(formValues) async {
+//
+//   var URL = Uri.parse('$baseURL/users');
+//   var postBody = json.encode(formValues);
+//
+//   var response = await http.post(URL, headers: requestHeader, body: postBody );
+//   var resultCode = response.statusCode;
+//   var resultBody = json.decode(response.body);
+//   token = resultBody['data']['otpToken']['token'];
+//
+//   print(response.statusCode);
+//   print(response.body);
+//   //print(token);
+//
+//   //storeUserData(response.body);
+//
+//   if (resultCode == 200 && resultBody['success']== true )
+//   {
+//     successToast('Request Success!');
+//     //storeUserData(response.body);
+//     return true;
+//   }
+//   else
+//   {
+//     errorToast('Request Denied, please try again later.');
+//     return false;
+//   }
+//
+// }
 
-  var URL = Uri.parse('$baseURL/users');
-  var postBody = json.encode(formValues);
+Future<void> registerUser({XFile? imageFile, formValues}) async {
+  final url = Uri.parse("https://www.server.thereflectivespiritapp.com/api/v1/users");
 
-  var response = await http.post(URL, headers: requestHeader, body: postBody );
-  var resultCode = response.statusCode;
-  var resultBody = json.decode(response.body);
-  token = resultBody['data']['otpToken']['token'];
+  var request = http.MultipartRequest("POST", url);
 
-  print(response.statusCode);
-  print(response.body);
-  //print(token);
+  request.fields['data'] = jsonEncode(formValues);
 
-  //storeUserData(response.body);
-
-  if (resultCode == 200 && resultBody['success']== true )
-  {
-    successToast('Request Success!');
-    //storeUserData(response.body);
-    return true;
+  if (imageFile != null) {
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'profile',
+        imageFile.path,
+        filename: basename(imageFile.path),
+      ),
+    );
   }
-  else
-  {
-    errorToast('Request Denied, please try again later.');
-    return false;
-  }
 
+  request.headers.addAll({
+    "Accept": "application/json",
+  });
+
+  try {
+
+    var streamedResponse = await request.send();
+
+    var response = await http.Response.fromStream(streamedResponse);
+
+    var resultBody = json.decode(response.body);
+    token = resultBody['data']['otpToken']['token'];
+
+    print("Status Code: ${response.statusCode}");
+    print("Response Body: ${response.body}");
+  } catch (e) {
+    print("Error: $e");
+  }
 }
 
 Future<bool>verifyOTPRequest(formValues) async {
